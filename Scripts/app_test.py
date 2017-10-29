@@ -13,6 +13,28 @@ style.use('ggplot')
 
 LARGE_FONT = ("Verdana", 12)
 
+f = Figure(figsize=(5,5), dpi=100)
+a = f.add_subplot(111)
+
+def animate(i):
+    pullData = open('sample.txt','r').read()
+    dataArray = pullData.split('\n')
+    xar = []
+    yar = []
+    for eachline in dataArray:
+        if len(eachline) > 1:
+            x,y = eachline.split(',')
+            xar.append(int(x))
+            yar.append(int(y))
+            
+    a.clear()
+    a.plot(xar,yar)
+        
+def callback():
+    # print ("called the callback!")
+    name = tk.filedialog.askopenfilename()
+    print(name)
+    
 class SeaofBTCapp(tk.Tk):
     def __init__(self):
         tk.Tk.__init__(self)
@@ -25,28 +47,30 @@ class SeaofBTCapp(tk.Tk):
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
         self.frames = {}
+        # make the menu frame
+        menu = tk.Menu(self)
+        self.config(menu=menu)
+
+        filemenu = tk.Menu(menu)
+        menu.add_cascade(label="File", menu=filemenu)
+        filemenu.add_command(label="Open...", command=callback)
+        filemenu.add_separator()
+        filemenu.add_command(label="Exit", command=callback)
+
+        helpmenu = tk.Menu(menu)
+        menu.add_cascade(label="Help",  menu=helpmenu)
+        helpmenu.add_command(label="About", command=callback)
+        
         # make the graph frame
         frame = GraphPage(container, self)
         self.frames[GraphPage] = frame
         frame.grid(row=0, column=0, sticky="nsew")
         self.show_frame(GraphPage)
-        frame.a.clear()
 
     def show_frame(self, cont):
         frame = self.frames[cont]
         frame.tkraise()
 
-    def animate(i):
-##        pullData = open('sample.txt','r').read()
-##        dataArray = pullData.split('\n')
-##        xar = []
-##        yar = []
-##        for eachline in dataArray:
-##            if len(eachline) > 1:
-##                x,y = eachline.split(',')
-##                xar.append(int(x))
-##                yar.append(int(y))
-        frame.a.clear()
             
 class StartPage(tk.Frame):
     def __init__(self, parent, controller):
@@ -64,13 +88,13 @@ class GraphPage(tk.Frame):
         label = tk.Label(self, text="Graph Page", font=LARGE_FONT)
         label.pack(pady=10,padx=10)
 
-        button1 = ttk.Button(self, text="Back to Homepage", command=
-                             lambda: controller.showframe(StartPage))
-        button1.pack()
+##        button1 = ttk.Button(self, text="Back to Homepage", command=
+##                             lambda: controller.showframe(StartPage))
+##        button1.pack()
 
-        f = Figure(figsize=(5,5), dpi=100)
-        a = f.add_subplot(111)
-        a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
+##        f = Figure(figsize=(5,5), dpi=100)
+##        a = f.add_subplot(111)
+##        a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
 
         canvas = FigureCanvasTkAgg(f, self)
         canvas.show()
@@ -94,6 +118,7 @@ def qf(quickPrint):
 ##        button1.pack()
 
 app = SeaofBTCapp()
+ani = animation.FuncAnimation(f,animate,interval=1000)
 app.mainloop()
 
         
