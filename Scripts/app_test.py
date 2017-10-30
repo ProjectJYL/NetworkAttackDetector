@@ -11,13 +11,18 @@ import matplotlib.animation as animation
 from matplotlib import style
 style.use('ggplot')
 
+filename = ""
+
 LARGE_FONT = ("Verdana", 12)
 
 f = Figure(figsize=(5,5), dpi=100)
 a = f.add_subplot(111)
 
 def animate(i):
-    pullData = open('sample.txt','r').read()
+    if(len(filename)<1):
+        return
+    
+    pullData = open(filename,'r').read()
     dataArray = pullData.split('\n')
     xar = []
     yar = []
@@ -31,9 +36,8 @@ def animate(i):
     a.plot(xar,yar)
         
 def callback():
-    # print ("called the callback!")
-    name = tk.filedialog.askopenfilename()
-    print(name)
+    global filename
+    filename = tk.filedialog.askopenfilename()
     
 class SeaofBTCapp(tk.Tk):
     def __init__(self):
@@ -53,7 +57,7 @@ class SeaofBTCapp(tk.Tk):
 
         filemenu = tk.Menu(menu)
         menu.add_cascade(label="File", menu=filemenu)
-        filemenu.add_command(label="Open...", command=callback)
+        filemenu.add_command(label="Open...",command= callback)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=callback)
 
