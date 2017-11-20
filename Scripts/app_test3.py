@@ -14,6 +14,9 @@ current_index = 0;
 fig = Figure(figsize=(15,5), dpi=100)
 fig.subplots_adjust(left=0.07,bottom=0.1,right=0.95,top=0.95)
 a = fig.add_subplot(111)
+a.plot([],[],'r')
+a.plot([],[],'g')
+fig.legend( a.lines,("line 1","line 2"),"upper right")
 
 def init():
     a.set_ylim(-2,2)
@@ -25,7 +28,7 @@ def init():
 def update(frame):
     global current_index
     x,y1,y2 = 0,0,0
-    pullData = open("testname",'r').read()
+    pullData = open("sample3",'r').read()
     dataArray = pullData.split('\n')
     if(current_index > len(dataArray)):
         return a.lines
@@ -99,8 +102,8 @@ class SeaofBTCapp(tk.Tk):
 
         filemenu = tk.Menu(menu)
         menu.add_cascade(label="File", menu=filemenu)
-        filemenu.add_command(label="Open...",command= openfilecb)
-        filemenu.add_separator()
+##        filemenu.add_command(label="Open...",command= openfilecb)
+##        filemenu.add_separator()
         filemenu.add_command(label="Exit", command=quitappcb)
 
         helpmenu = tk.Menu(menu)
