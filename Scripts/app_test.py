@@ -6,83 +6,141 @@ import tkinter as tk
 from tkinter import ttk
 import matplotlib.animation as animation
 from matplotlib import style
-import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+import numpy as np
+import random
 
 style.use('ggplot')
 LARGE_FONT = ("Verdana", 12)
         
-lines = []
-current_index = 1;
+#parameters
+current_index = 0
+##current_index2 = 0
+filename = ""
+INTERVAL = 10
+plot = False
+mcavData = []
+xlen = 1000
 
-##f = Figure(figsize=(5,5), dpi=100)
-##a = f.add_subplot(111)
-fig, ax = plt.subplots(figsize=(15,5))
-xdata, y1data, y2data = [],[],[]
-ln1, ln2= plt.plot([], [], [], [], animated=True)
 
-def init():
-##    ax.set_xlim(0, 1000)
-    ax.set_ylim(-2, 2)
-    ax.set_xlabel("xdata")
-    ax.set_ylabel("ydata")
-    ln1.set_label("line1")
-    ln2.set_label("line2")
-    ax.set_xbound(0,1000)
-    plt.legend()
-    return ln1,ln2
+#live graph
+fig = Figure(figsize=(15,5), dpi=100)
+afig = fig.add_subplot(111)
+afig.set_xlabel("xdata")
+afig.set_ylabel("ydata")
+afig.set_adjustable('datalim')
+afig.plot([],[],'r',[],[],'g')
+afig.set_ylim(-1,1)
+afig.set_xbound(0,10)
+fig.legend(afig.get_lines(),("y1","y2"),"upper right")
 
+#mcav data
+fig2 = Figure(figsize=(15,5), dpi=100)
+afig2 = fig2.add_subplot(111)
+afig2.set_xlabel("xdata")
+afig2.set_ylabel("ydata")
+afig2.set_adjustable('datalim')
+afig2.plot([],[],'b')
+afig2.set_ylim(0,1)
+afig2.set_xbound(0,10)
+
+def line_picker(line, mouseevent):
+        """
+        find the points within a certain distance from the mouseclick in
+        data coords and attach some extra attributes, pickx and picky
+        which are the data points that were picked
+        """
+        if mouseevent.xdata is None:
+            return False, dict()
+        xdata = line.get_xdata()
+        ydata = line.get_ydata()
+        maxd = 0.05
+        d = np.sqrt((xdata - mouseevent.xdata)**2. + (ydata - mouseevent.ydata)**2.)
+
+        ind = np.nonzero(np.less_equal(d, maxd))
+        if len(ind):
+            pickx = np.take(xdata, ind)
+            picky = np.take(ydata, ind)
+            props = dict(ind=ind, pickx=pickx, picky=picky)
+            return True, props
+        else:
+            return False, dict()
+
+def onpick(event):
+    print('(%s,%s)' % (str(event.pickx), str(event.picky)))
+    return
+    
 def update(frame):
-    global lines
     global current_index
+    global filename
 
-    if(len(lines) < 1):
-        print('Err:file data is not read into the array.')
-        return ln1, ln2
+##    if(len(filename) < 1):
+##        return afig.lines
 
-    if(current_index >= len(lines)):
-        print('EOF is reached. No new data to be plotted.')
-        return ln1, ln2
-        
-    x,y1,y2 = lines[current_index].split(',')
-    xdata.append(int(x))
-    y1data.append(float(y1))
-    y2data.append(float(y2))
-    ln1.set_data(xdata,y1data)
-    ln2.set_data(xdata,y2data)
-##    upperx = 100+int(x)
-##    lowerx = int(x)-1
-##    ax.set_xlim(left=lowerx,right=upperx)
+    if(not plot):
+        return afig.lines
+
+    data = open("sample3",'r').read()    
+    dataline = data.split('\n')
+    if(current_index > len(dataline) ):
+        return afig.lines
+    
+    xdata, y1data, y2data = [],[],[]        
+    for eachline in dataline[:current_index]:
+        if(len(eachline)>1):
+            x,y1,y2 = eachline.split(',')
+            xdata.append(int(x))
+            y1data.append(float(y1))
+            y2data.append(float(y2))           
+
+    afig.clear()
+    afig.plot(xdata,y1data,'r',
+        xdata,y2data,'g',picker=line_picker)
+    # annotation isn't quite right
+##    for i in xdata:
+##        afig.annotate(s="(%s,%s)"%(xdata[i],y1data[i]),
+##                      xy=(xdata[i],y1data[i]),
+##                      xycoords="data")
+##        afig.annotate(s="(%s,%s)"%(xdata[i],y2data[i]),
+##                      xy=(xdata[i],y2data[i]),
+##                      xycoords="data")
+
     current_index = current_index + 1;
-    return ln1, ln2
+    return afig.lines
 
+def update2(frame):
+##        global current_index2,plot,mcavData
+        global current_index,plot,mcavData
+        
+        if(not plot):
+                return afig2.lines
+        
+        xdata = np.arange(0,1000)
+        for i in xdata:
+                y = random.randrange(0,1001)/1000.00
+                mcavData.append(y)
+                
+        afig2.clear()
+##        afig2.plot(xdata[:current_index2],mcavData[:current_index2],'b')
+        afig2.plot(xdata[:current_index],mcavData[:current_index],'b')
+##        current_index2 = current_index2 + 1
+        current_index = current_index + 1
+        return afig2.lines
         
 def openfilecb():
-    global lines
-    global current_index
-    global xdata,y1data, y2data
+    global filename, current_index
     
     filename = tk.filedialog.askopenfilename()
-    fo = open(filename,'r')
-    lines = []
-    lines = fo.readlines();
-    fo.close()
-    if(fo.closed):
-        current_index = 1
-        xdata,y1data, y2data = [],[], []
-        plt.clf()
-        fig.clear()
-        ax.set_xlim(0,100,auto=True)
-        print('File "%s" is opened and read successfully' %filename)
+    current_index = 0
     return
 
 def callback():
     filename = tk.filedialog.askopenfilename()
-    print(filename)
     return
 
 def aboutappcb():
-    title = "About Network Attack Detector"
-    message="Version 1.0                        "
+    title = "About"
+    message="Network Attack Detector. Version 1.0"
     tk.filedialog.messagebox.showinfo(title,message)
     return
 
@@ -98,97 +156,97 @@ def quitappcb():
         print("Quit canceled")
     return
 
+def setplotcb():
+##        global plot,mcavData,current_index2
+        global plot,mcavData,current_index
+        plot = not plot
+
+        if(plot):
+##                current_index2 = 0
+            current_index = 0
+            afig2.clear()
+            mcavData = []
     
-class SeaofBTCapp(tk.Tk):
+class SeaofBTCapp(tk.Tk):        
     def __init__(self):
         tk.Tk.__init__(self)
+        var_text = tk.StringVar()
         #change the style of our window a bit 
         # tk.Tk.iconbitmap('/home/jialee/Pictures/python-logo.gif')
         tk.Tk.wm_title(self, "Network Attack Detector")
+        #create notebook tab
+        tab = ttk.Notebook(self)
+        tab.pack()
         #create the first main frame
         container = tk.Frame(self)
         container.pack(side="top",fill="both", expand=True)
         container.grid_rowconfigure(0, weight=1)
         container.grid_columnconfigure(0, weight=1)
         self.frames = {}
+        #create the second main frame
+        container2 = tk.Frame(self)
+        container2.pack(side="top",fill="both", expand=True)
+        container2.grid_rowconfigure(0, weight=1)
+        container2.grid_columnconfigure(0, weight=1)
+        # add tab
+        tab.add(container, text="y data plot")
+        tab.add(container2, text="MCAV")
         # make the menu frame
         menu = tk.Menu(self)
         self.config(menu=menu)
-
         filemenu = tk.Menu(menu)
         menu.add_cascade(label="File", menu=filemenu)
         filemenu.add_command(label="Open...",command= openfilecb)
         filemenu.add_separator()
         filemenu.add_command(label="Exit", command=quitappcb)
-
         helpmenu = tk.Menu(menu)
         menu.add_cascade(label="Help",  menu=helpmenu)
         helpmenu.add_command(label="About", command=aboutappcb)
-        
         # make the graph frame
         frame = GraphPage(container, self)
         self.frames[GraphPage] = frame
         frame.grid(row=0, column=0, sticky="nsew")
         self.show_frame(GraphPage)
+        # make the mcav frame
+        frame = MCAV_Page(container2, self)
+        self.frames[MCAV_Page] = frame
+        frame.grid(row=0, column=0, sticky="nsew")
+        self.show_frame(MCAV_Page)
 
     def show_frame(self, cont):
         frame = self.frames[cont]
         frame.tkraise()
 
             
-class StartPage(tk.Frame):
+class MCAV_Page(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Start Page", font=LARGE_FONT)
-        label.pack(pady=10, padx=10)
-
-        button = ttk.Button(self, text="Visit Page 1",
-                           command = lambda: qf("Check it out, i'm passing vars"))
-        button.pack()
+        canvas = FigureCanvasTkAgg(fig2,self)
+        canvas.show()
+        canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
+        toolbar = NavigationToolbar2TkAgg(canvas, self)
+        toolbar.update()
+        canvas._tkcanvas.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
+        #Add a plot button to start plotting
+        start = ttk.Button(self, text="Plot", command=setplotcb)
+        start.pack()
 
 class GraphPage(tk.Frame):
     def __init__(self, parent, controller):
         tk.Frame.__init__(self, parent)
-        label = tk.Label(self, text="Graph Page", font=LARGE_FONT)
-        label.pack(pady=10,padx=10)
-
-##        button1 = ttk.Button(self, text="Back to Homepage", command=
-##                             lambda: controller.showframe(StartPage))
-##        button1.pack()
-
-##        f = Figure(figsize=(5,5), dpi=100)
-##        a = f.add_subplot(111)
-##        a.plot([1,2,3,4,5,6,7,8],[5,6,1,3,8,9,3,5])
-        
         canvas = FigureCanvasTkAgg(fig, self)
         canvas.show()
         canvas.get_tk_widget().pack(side=tk.BOTTOM, fill=tk.BOTH, expand=True)
         toolbar = NavigationToolbar2TkAgg(canvas, self)
         toolbar.update()
         canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
+        canvas.mpl_connect("pick_event", onpick)
         
-                           
-def qf(quickPrint):
-    print(quickPrint)
-    
-##class PageThree(tk.Frame):
-##    def __init__(self,parent,controller):
-##        tk.Frame.__init__(self,parent)
-##        label = tk.Label(self, text ="Graph Page!", font=LARGE_FONT)
-##        label.pack(pady=10,padx=10)
-##
-##        button1 = ttk.Button(self, text="Back to Home",
-##                             command=lambda: controller.show_frame(StartPage))
-##        button1.pack()
+
 
 app = SeaofBTCapp()
-ani = animation.FuncAnimation(fig, update, frames=list(range(0,1000)),
-                              interval=10)
-##ani = animation.FuncAnimation(fig, update, init_func=init,
-##                              blit=True, interval=1000)
-
+ani = animation.FuncAnimation(fig,update,blit=True,interval=INTERVAL)
+ani2 = animation.FuncAnimation(fig2,update2,blit=True,interval=INTERVAL)
 app.mainloop()
-
-        
 
         
